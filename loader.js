@@ -179,17 +179,20 @@ var global = this;
       obj = seen[name] = module;
     }
 
-    if (obj !== null &&
-        (typeof obj === 'object' || typeof obj === 'function') &&
-          obj['default'] === undefined) {
-      obj['default'] = obj;
-    }
+    // unrelated to ES6 semantics and broken in some cases:
+    // if (obj !== null &&
+    //     (typeof obj === 'object' || typeof obj === 'function') &&
+    //       obj['default'] === undefined) {
+    //   obj['default'] = obj;
+    // }
 
     return (seen[name] = obj);
   };
 
   function resolve(child, name) {
     if (child.charAt(0) !== '.') { return child; }
+
+    var fromTopLevel = name.indexOf('/') === -1;
 
     var parts = child.split('/');
     var nameParts = name.split('/');
@@ -200,9 +203,11 @@ var global = this;
 
       if (part === '..') {
         if (parentBase.length === 0) {
-          throw new Error('Cannot access parent module of root');
+          throw new Error('Could not look up `' + child + '` imported from `' + name + '` (too many ..\'s)');
         }
         parentBase.pop();
+      } else if (part === '.' && fromTopLevel) {
+        parentBase.push(name);
       } else if (part === '.') {
         continue;
       } else { parentBase.push(part); }
